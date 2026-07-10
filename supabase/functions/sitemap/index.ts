@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BASE_URL = 'https://partnerguiden.se';
+const BASE_URL = Deno.env.get('BASE_URL') || 'https://partnerguiden.se';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

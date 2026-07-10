@@ -9,10 +9,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret, x-admin-test",
 };
 
-// Image base URL - images need to be in public/images folder
-const IMAGE_BASE_URL = "https://partnerguiden.se/images";
+const BASE_URL = Deno.env.get("BASE_URL") || "https://partnerguiden.se";
 
-const BASE_URL = "https://partnerguiden.se";
+// Image base URL - images need to be in public/images folder
+const IMAGE_BASE_URL = `${BASE_URL}/images`;
 
 interface ArticleData {
   slug: string;

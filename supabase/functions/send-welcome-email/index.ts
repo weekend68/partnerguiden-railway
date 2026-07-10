@@ -9,7 +9,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const BASE_URL = "https://partnerguiden.se";
+const BASE_URL = Deno.env.get("BASE_URL") || "https://partnerguiden.se";
 
 // HMAC-SHA256 for unsubscribe link
 async function generateHMAC(message: string, secret: string): Promise<string> {
