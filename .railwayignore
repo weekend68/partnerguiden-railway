@@ -1,0 +1,5 @@
+supabase/
+e2e/
+playwright.config.ts
+playwright-fixture.ts
+.lovable/
