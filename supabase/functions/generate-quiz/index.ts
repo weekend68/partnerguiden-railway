@@ -81,27 +81,16 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     console.log("Generating quiz for article:", articleTitle, "from IP:", clientIP);
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `Du är en expert på att skapa reflekterande quizfrågor för par som vill förstå klimakteriet bättre. 
-            
+    const systemPrompt = `Du är en expert på att skapa reflekterande quizfrågor för par som vill förstå klimakteriet bättre.
+
 Skapa 3 reflekterande frågor baserat på artikeln. Varje fråga ska:
 - Hjälpa partnern förstå hur hen kan stötta bättre
 - Vara empatisk och respektfull
@@ -110,7 +99,7 @@ Skapa 3 reflekterande frågor baserat på artikeln. Varje fråga ska:
 
 VIKTIGT FÖR SVARSALTERNATIV:
 - Alla 4 svarsalternativ ska ha UNGEFÄR SAMMA LÄNGD (5-20 ord var)
-- Positionen på det korrekta svaret måste variera 
+- Positionen på det korrekta svaret måste variera
 - Gör alla alternativ realistiska och trovärdiga
 
 Svara ENDAST med giltig JSON i exakt detta format:
@@ -123,19 +112,35 @@ Svara ENDAST med giltig JSON i exakt detta format:
       "explanation": "Kort förklaring varför detta svar är bäst"
     }
   ]
-}`,
-          },
-          {
-            role: "user",
-            content: `Artikel: "${articleTitle}"\n\nInnehåll:\n${articleContent.substring(0, 3000)}`,
-          },
-        ],
-      }),
-    });
+}`;
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": GEMINI_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: `Artikel: "${articleTitle}"\n\nInnehåll:\n${articleContent.substring(0, 3000)}`,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Gemini API error:", response.status, errorText);
 
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "För många förfrågningar, vänta en stund." }), {
@@ -149,11 +154,11 @@ Svara ENDAST med giltig JSON i exakt detta format:
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`AI gateway error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
     console.log("Raw AI response:", content);
 
