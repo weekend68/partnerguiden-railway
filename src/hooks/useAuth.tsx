@@ -29,12 +29,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Magic links from send-magic-link/verify-email-token are generated via
+    // supabase.auth.admin.generateLink(), which always returns implicit-flow
+    // links (#access_token=...&refresh_token=...). @supabase/ssr's browser
+    // client hardcodes flowType to "pkce" (see createBrowserClient.js) and
+    // silently ignores hash-fragment tokens, so we parse and consume them
+    // ourselves here instead of relying on its built-in detectSessionInUrl.
+    const hash = window.location.hash;
+    if (hash.includes("access_token=")) {
+      const params = new URLSearchParams(hash.slice(1));
+      const access_token = params.get("access_token");
+      const refresh_token = params.get("refresh_token");
+
+      if (access_token && refresh_token) {
+        supabase.auth.setSession({ access_token, refresh_token }).then(() => {
+          // Strip the tokens from the URL so they don't linger in history.
+          window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        });
+      }
+    } else {
+      // THEN check for existing session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
