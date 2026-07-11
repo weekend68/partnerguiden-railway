@@ -11,6 +11,39 @@ const corsHeaders = {
 
 const BASE_URL = Deno.env.get("BASE_URL") || "https://partnerguiden.se";
 
+// Escape user-supplied text before interpolating into HTML emails.
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Simple in-memory rate limiting per IP (resets on function restart).
+// Mirrors the pattern already used in generate-quiz/index.ts.
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 5; // Max requests per window
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,11 +56,31 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("cf-connecting-ip")
+      || req.headers.get("x-real-ip")
+      || "unknown";
+
+    if (!checkRateLimit(clientIP)) {
+      console.log("Rate limited IP:", clientIP);
+      return new Response(
+        JSON.stringify({ error: "För många förfrågningar. Vänta en stund och försök igen." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { email, name, redirectTo } = await req.json();
 
     if (!email) {
       return new Response(
         JSON.stringify({ error: "E-postadress saknas" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (typeof name === "string" && name.length > 200) {
+      return new Response(
+        JSON.stringify({ error: "Namnet är för långt" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -93,9 +146,9 @@ serve(async (req) => {
       from: "Partnerguiden: Klimakteriet <noreply@partnerguiden.se>",
       to: [email],
       subject: isNewUser ? "🎉 Välkommen till Partnerguiden!" : "🔑 Din inloggningslänk",
-      html: isNewUser 
-        ? generateWelcomeWithLinkEmail(name || "du", magicLinkUrl)
-        : generateMagicLinkEmail(name || "du", magicLinkUrl),
+      html: isNewUser
+        ? generateWelcomeWithLinkEmail(escapeHtml(name || "du"), magicLinkUrl)
+        : generateMagicLinkEmail(escapeHtml(name || "du"), magicLinkUrl),
     });
 
     console.log("Magic link email sent:", emailResult);
@@ -375,10 +428,10 @@ async function sendAdminNotification(
                 <tr>
                   <td style="padding: 20px;">
                     <p style="margin: 0 0 10px 0; color: #6B5B4F; font-size: 14px;">
-                      <strong>Namn:</strong> ${newUserName}
+                      <strong>Namn:</strong> ${escapeHtml(newUserName)}
                     </p>
                     <p style="margin: 0; color: #6B5B4F; font-size: 14px;">
-                      <strong>E-post:</strong> ${newUserEmail}
+                      <strong>E-post:</strong> ${escapeHtml(newUserEmail)}
                     </p>
                   </td>
                 </tr>
