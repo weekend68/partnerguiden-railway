@@ -10,6 +10,7 @@ import { useProgress } from "@/hooks/useProgress";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { SEO } from "@/components/SEO";
+import { track } from "@/lib/analytics";
 
 interface Article {
   id: string;
@@ -102,13 +103,14 @@ const Article = () => {
       // Mark as read when scrolled 80% of the page
       if (scrollPosition >= pageHeight * 0.8) {
         markArticleRead(article.id);
+        track("article_read", { article_slug: slug ?? "" });
         window.removeEventListener("scroll", handleScroll);
       }
     };
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [user, article, progress?.article_read, markArticleRead]);
+  }, [user, article, progress?.article_read, markArticleRead, slug]);
 
   if (loading) {
     return (

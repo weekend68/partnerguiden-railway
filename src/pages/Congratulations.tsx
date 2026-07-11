@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Footer } from "@/components/Footer";
 import { Fireworks } from "@/components/Fireworks";
 import { SEO } from "@/components/SEO";
+import { track } from "@/lib/analytics";
 
 export default function Congratulations() {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ export default function Congratulations() {
     try {
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
+      track("diploma_link_copied");
       toast.success("Länk kopierad!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -99,6 +101,7 @@ export default function Congratulations() {
       linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
     };
 
+    track("diploma_shared", { platform });
     window.open(urls[platform], "_blank", "width=600,height=400");
   };
 

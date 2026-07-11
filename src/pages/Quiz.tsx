@@ -10,6 +10,7 @@ import { useProgress } from "@/hooks/useProgress";
 import { supabase } from "@/integrations/supabase/client";
 import { Footer } from "@/components/Footer";
 import { Fireworks } from "@/components/Fireworks";
+import { track } from "@/lib/analytics";
 
 interface QuizQuestion {
   question: string;
@@ -102,6 +103,7 @@ export default function Quiz() {
 
         const data = await response.json();
         setQuestions(data.questions);
+        track("quiz_started", { article_slug: slug ?? "" });
       } catch (err) {
         console.error("Quiz error:", err);
         setError(err instanceof Error ? err.message : "Något gick fel");
@@ -111,7 +113,7 @@ export default function Quiz() {
     };
 
     fetchQuiz();
-  }, [article, loadingArticle]);
+  }, [article, loadingArticle, slug]);
 
   // Calculate derived values
   const currentArticleIndex = allArticles.findIndex((a) => a.slug === slug);
@@ -124,7 +126,9 @@ export default function Quiz() {
   useEffect(() => {
     const saveResultAndCheckCompletion = async () => {
       if (!quizComplete || !article || !passed || savingResult) return;
-      
+
+      track("quiz_completed", { article_slug: slug ?? "", score, passed: true });
+
       // For logged-in users, save to database
       if (user) {
         // Check if this quiz was already completed before
@@ -174,12 +178,14 @@ export default function Quiz() {
           
           if (allOthersComplete) {
             console.log("COURSE COMPLETE! Showing fireworks.");
+            track("course_completed", { logged_in: true });
             setJustCompletedCourse(true);
           }
         } else {
           // For non-logged-in users on last article who passed, show celebration
           // (they can't track progress anyway)
           console.log("Non-logged user completed last quiz - showing fireworks");
+          track("course_completed", { logged_in: false });
           setJustCompletedCourse(true);
         }
       }
@@ -188,7 +194,7 @@ export default function Quiz() {
     saveResultAndCheckCompletion();
     // NOTE: We intentionally exclude 'progress' from deps to avoid re-running when it updates
     // The refetch() call updates progress, but we don't want to re-check completion after that
-  }, [quizComplete, article, passed, savingResult, user, markQuizCompleted, score, refetch, isLastArticle, totalArticles]);
+  }, [quizComplete, article, passed, savingResult, user, markQuizCompleted, score, refetch, isLastArticle, totalArticles, slug]);
 
   if (loadingArticle) {
     return (
@@ -228,6 +234,9 @@ export default function Quiz() {
       setHasAnswered(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
+      if (score < 1) {
+        track("quiz_failed", { article_slug: slug ?? "", score });
+      }
       setQuizComplete(true);
     }
   };

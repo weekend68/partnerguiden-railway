@@ -1,14 +1,24 @@
 import { useSearchParams, Link } from "react-router-dom";
+import { useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MailX, CheckCircle, AlertCircle } from "lucide-react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { track } from "@/lib/analytics";
 
 export default function Unsubscribe() {
   const [searchParams] = useSearchParams();
   const status = searchParams.get("status");
   const reason = searchParams.get("reason");
+
+  useEffect(() => {
+    track("unsubscribe_result", {
+      status: status ?? "none",
+      ...(reason ? { reason } : {}),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Determine the message based on status and reason
   const getContent = () => {

@@ -59,6 +59,9 @@
       ]
     }
     </script>
+
+    <!-- Umami analytics (cookieless) - no-ops if VITE_UMAMI_* build vars are unset -->
+    <script defer data-website-id="%VITE_UMAMI_WEBSITE_ID%" src="%VITE_UMAMI_SCRIPT_URL%"></script>
   </head>
 
   <body>

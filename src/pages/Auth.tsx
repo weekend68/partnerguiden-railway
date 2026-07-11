@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Mail, BarChart3, GraduationCap, Shield, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import { track } from "@/lib/analytics";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -48,8 +49,12 @@ export default function Auth() {
 
       setEmailSent(true);
       setSubmittedEmail(email);
+      track("magic_link_requested", { is_new_user: !!data.isNewUser });
     } catch (error: any) {
       console.error("Magic link error:", error);
+      track("magic_link_failed", {
+        reason: error instanceof TypeError ? "network" : "server",
+      });
       toast({
         title: "Något gick fel",
         description: error.message || "Kunde inte skicka inloggningslänk",

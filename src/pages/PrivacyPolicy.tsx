@@ -61,8 +61,16 @@ export default function PrivacyPolicy() {
 
           <h2 className="text-xl font-heading font-semibold mt-8 mb-4">Cookies</h2>
           <p>
-            Vi använder endast nödvändiga cookies för att tjänsten ska fungera, 
+            Vi använder endast nödvändiga cookies för att tjänsten ska fungera,
             till exempel för att hålla dig inloggad.
+          </p>
+
+          <h2 className="text-xl font-heading font-semibold mt-8 mb-4">Statistik</h2>
+          <p>
+            Vi använder Umami, en cookielös analystjänst, för att förstå hur sajten
+            används i stort. Umami sätter inga cookies och sparar ingen data som kan
+            kopplas till dig personligen – vi ser till exempel aldrig din e-postadress
+            eller ditt namn i statistiken.
           </p>
 
           <h2 className="text-xl font-heading font-semibold mt-8 mb-4">Kontakt</h2>
@@ -72,7 +80,7 @@ export default function PrivacyPolicy() {
           </p>
 
           <p className="text-sm text-muted-foreground mt-12">
-            Senast uppdaterad: Januari 2025
+            Senast uppdaterad: Juli 2026
           </p>
         </div>
       </main>
