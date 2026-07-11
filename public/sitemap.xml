@@ -2,13 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://partnerguiden.se</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artiklar</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -20,86 +20,92 @@
   </url>
   <url>
     <loc>https://partnerguiden.se/integritetspolicy</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-11</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/klimakteriet-forklarat</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/varmevallningar</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/hjarnan-orkar-inte</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/glomska-fokus</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/nar-varlden-skaver</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/oro-slapper-inte</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/narhet-pa-nya-villkor</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/kropp-spegelbild</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/motivation-traning</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/osynlighet-varde</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/kommunikation-ar-svart</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/sandwich-generationen</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://partnerguiden.se/artikel/hormonbehandling-hrt</loc>
-    <lastmod>2026-02-10</lastmod>
+    <lastmod>2026-07-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://partnerguiden.se/llms.txt</loc>
+    <lastmod>2026-07-11</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>
