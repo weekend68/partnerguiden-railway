@@ -11,6 +11,16 @@ const corsHeaders = {
 
 const BASE_URL = Deno.env.get("BASE_URL") || "https://partnerguiden.se";
 
+// Escape user-supplied text before interpolating into HTML emails.
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // HMAC-SHA256 for unsubscribe link
 async function generateHMAC(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -88,10 +98,10 @@ async function sendAdminNotification(
                 <tr>
                   <td style="padding: 20px;">
                     <p style="margin: 0 0 10px 0; color: #6B5B4F; font-size: 14px;">
-                      <strong>Namn:</strong> ${newUserName || "Ej angivet"}
+                      <strong>Namn:</strong> ${escapeHtml(newUserName || "Ej angivet")}
                     </p>
                     <p style="margin: 0; color: #6B5B4F; font-size: 14px;">
-                      <strong>E-post:</strong> ${newUserEmail}
+                      <strong>E-post:</strong> ${escapeHtml(newUserEmail)}
                     </p>
                   </td>
                 </tr>
@@ -136,15 +146,32 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // This function can be called by a database webhook or manually
-    const { user_id, email, display_name } = await req.json();
+    const { email, display_name } = await req.json();
 
-    if (!user_id || !email) {
+    if (!email) {
       return new Response(
-        JSON.stringify({ error: "Missing user_id or email" }),
+        JSON.stringify({ error: "Missing email" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // Resolve user_id server-side from the email instead of trusting a
+    // caller-supplied user_id directly - accepting an arbitrary user_id from
+    // an unauthenticated request would let anyone mint a valid signed
+    // unsubscribe token for any account (see security review finding).
+    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
+    const matchedUser = existingUsers?.users?.find(
+      (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (listError || !matchedUser) {
+      return new Response(
+        JSON.stringify({ error: "No user found for that email" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const user_id = matchedUser.id;
     const name = display_name || "du";
 
     // Generate unsubscribe link with HMAC signature
@@ -181,7 +208,7 @@ serve(async (req) => {
           <!-- Content -->
           <tr>
             <td style="padding: 40px 30px;">
-              <p style="margin: 0 0 20px 0; color: #6B5B4F; font-size: 18px;">Hej ${name}! 👋</p>
+              <p style="margin: 0 0 20px 0; color: #6B5B4F; font-size: 18px;">Hej ${escapeHtml(name)}! 👋</p>
               
               <p style="margin: 0 0 20px 0; color: #4A4A4A; font-size: 16px; line-height: 1.6;">
                 Tack för att du registrerade dig på <strong>Partnerguiden: Klimakteriet</strong>. 
