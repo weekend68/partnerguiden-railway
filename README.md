@@ -19,10 +19,11 @@ Partnerguiden är ett ideellt projekt skapat för att ge partners konkret kunska
 
 ## Teknikstack
 
-- **Frontend:** React, TypeScript, Tailwind CSS, Vite
-- **Backend:** Lovable Cloud (databas, autentisering, edge functions, mejlutskick)
-- **Övrigt:** shadcn/ui, React Router, TanStack Query
+- **Frontend:** Next.js (App Router), React, TypeScript, Tailwind CSS
+- **Backend:** Supabase (databas, autentisering, edge functions, mejlutskick)
+- **Övrigt:** shadcn/ui
+- **Hosting:** Railway
 
 ## Bakgrund
 
-Projektet är byggt med [Lovable](https://lovable.dev).
+Projektet startades som ett Lovable-prototyp men körs numera fristående på Railway/Supabase, migrerat till Next.js för server-renderad SEO.
