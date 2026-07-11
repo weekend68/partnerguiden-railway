@@ -9,7 +9,6 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithMagicLink: (email: string, displayName?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<{ error: Error | null }>;
 }
 
@@ -62,30 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithMagicLink = async (email: string, displayName?: string) => {
-    const redirectUrl =
-      process.env.NODE_ENV === "production" ? "https://partnerguiden.se/" : `${window.location.origin}/`;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          display_name: displayName,
-        },
-      },
-    });
-
-    return { error };
-  };
-
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     return { error };
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithMagicLink, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
