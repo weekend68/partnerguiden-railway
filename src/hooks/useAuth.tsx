@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { setAnalyticsLoggedIn } from "@/lib/analytics";
 
 interface AuthContextValue {
   user: User | null;
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      setAnalyticsLoggedIn(!!session);
     });
 
     // Magic links from send-magic-link/verify-email-token are generated via
@@ -53,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        setAnalyticsLoggedIn(!!session);
       });
     }
 
