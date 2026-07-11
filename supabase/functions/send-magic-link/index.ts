@@ -21,28 +21,8 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// Simple in-memory rate limiting per IP (resets on function restart).
-// Mirrors the pattern already used in generate-quiz/index.ts.
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_MAX = 5; // Max requests per window
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-
-  entry.count++;
-  return true;
-}
+const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -61,7 +41,17 @@ serve(async (req) => {
       || req.headers.get("x-real-ip")
       || "unknown";
 
-    if (!checkRateLimit(clientIP)) {
+    const { data: allowed, error: rateLimitError } = await supabase.rpc("check_rate_limit", {
+      p_key: `send-magic-link:${clientIP}`,
+      p_limit: RATE_LIMIT_MAX,
+      p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+    });
+
+    if (rateLimitError) {
+      // Fail open on infra errors rather than blocking all logins if the
+      // rate_limits table/function is ever unavailable.
+      console.error("Rate limit check failed:", rateLimitError);
+    } else if (!allowed) {
       console.log("Rate limited IP:", clientIP);
       return new Response(
         JSON.stringify({ error: "För många förfrågningar. Vänta en stund och försök igen." }),

@@ -1,31 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Simple in-memory rate limiting per IP (resets on function restart)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+// Persistent, atomic rate limiting via the rate_limits table + check_rate_limit()
+// Postgres function (see migration 20260711130000_add_rate_limits.sql). Replaces
+// an in-memory per-isolate Map, which was verified live to not actually limit
+// anything - Supabase Edge Function isolates don't reliably reuse in-memory
+// state across invocations.
 const RATE_LIMIT_MAX = 10; // Max requests per window
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  
-  if (!entry || now > entry.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  
-  if (entry.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-  
-  entry.count++;
-  return true;
-}
+const RATE_LIMIT_WINDOW_SECONDS = 60;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -34,13 +21,28 @@ serve(async (req) => {
 
   try {
     // Get client IP for rate limiting
-    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() 
-      || req.headers.get("cf-connecting-ip") 
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+      || req.headers.get("cf-connecting-ip")
       || req.headers.get("x-real-ip")
       || "unknown";
-    
-    // Check rate limit
-    if (!checkRateLimit(clientIP)) {
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const { data: allowed, error: rateLimitError } = await supabase.rpc("check_rate_limit", {
+      p_key: `generate-quiz:${clientIP}`,
+      p_limit: RATE_LIMIT_MAX,
+      p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+    });
+
+    if (rateLimitError) {
+      // Fail open on infra errors rather than blocking quiz generation if
+      // the rate_limits table/function is ever unavailable.
+      console.error("Rate limit check failed:", rateLimitError);
+    } else if (!allowed) {
       console.log("Rate limited IP:", clientIP);
       return new Response(
         JSON.stringify({ error: "För många förfrågningar. Vänta en stund och försök igen." }),
