@@ -53,8 +53,19 @@ export async function getFullArticles(): Promise<ArticleFull[]> {
 }
 
 export async function getArticleBySlug(slug: string): Promise<ArticleFull | null> {
-  const articles = await getFullArticles();
-  return articles.find((a) => a.slug === slug) ?? null;
+  const { data, error } = await supabase
+    .from("articles")
+    .select(
+      "id, slug, title, excerpt, content, image_url, image_filename, image_alt, meta_title, published_at, updated_at"
+    )
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching article by slug:", error);
+    return null;
+  }
+  return data ?? null;
 }
 
 export async function getArticleFaqs(articleId: string): Promise<ArticleFaq[]> {
