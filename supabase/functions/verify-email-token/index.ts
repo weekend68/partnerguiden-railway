@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const BASE_URL = Deno.env.get("BASE_URL") || "https://partnerguiden.se";
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -41,7 +43,7 @@ serve(async (req) => {
     if (tokenError || !tokenData) {
       console.error("Token lookup error:", tokenError);
       return Response.redirect(
-        `${Deno.env.get("BASE_URL") || "https://partnerguiden.se"}/auth?error=invalid_token`,
+        `${BASE_URL}/auth?error=invalid_token`,
         302
       );
     }
@@ -49,7 +51,7 @@ serve(async (req) => {
     // Check if token has expired
     if (new Date(tokenData.expires_at) < new Date()) {
       return Response.redirect(
-        `${Deno.env.get("BASE_URL") || "https://partnerguiden.se"}/auth?error=expired_token`,
+        `${BASE_URL}/auth?error=expired_token`,
         302
       );
     }
@@ -60,7 +62,7 @@ serve(async (req) => {
     if (userError || !userData.user) {
       console.error("User lookup error:", userError);
       return Response.redirect(
-        `${Deno.env.get("BASE_URL") || "https://partnerguiden.se"}/auth?error=user_not_found`,
+        `${BASE_URL}/auth?error=user_not_found`,
         302
       );
     }
@@ -70,14 +72,14 @@ serve(async (req) => {
       type: "magiclink",
       email: userData.user.email!,
       options: {
-        redirectTo: `${Deno.env.get("BASE_URL") || "https://partnerguiden.se"}${redirectTo}`,
+        redirectTo: `${BASE_URL}${redirectTo}`,
       },
     });
 
     if (linkError || !linkData) {
       console.error("Magic link generation error:", linkError);
       return Response.redirect(
-        `${Deno.env.get("BASE_URL") || "https://partnerguiden.se"}/auth?error=link_failed`,
+        `${BASE_URL}/auth?error=link_failed`,
         302
       );
     }
@@ -86,7 +88,7 @@ serve(async (req) => {
     const verifyUrl = linkData.properties?.action_link;
     if (!verifyUrl) {
       return Response.redirect(
-        `${Deno.env.get("BASE_URL") || "https://partnerguiden.se"}/auth?error=link_failed`,
+        `${BASE_URL}/auth?error=link_failed`,
         302
       );
     }

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { generateHMAC } from "../_shared/hmac.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,24 +8,6 @@ const corsHeaders = {
 };
 
 const BASE_URL = Deno.env.get("BASE_URL") || "https://partnerguiden.se";
-
-// HMAC-SHA256 signing for secure tokens
-async function generateHMAC(message: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const messageData = encoder.encode(message);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    keyData,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
-  return btoa(String.fromCharCode(...new Uint8Array(signature)));
-}
 
 async function verifyHMAC(message: string, signature: string, secret: string): Promise<boolean> {
   const expectedSignature = await generateHMAC(message, secret);

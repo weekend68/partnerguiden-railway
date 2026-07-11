@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { generateHMAC } from "../_shared/hmac.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -20,24 +21,6 @@ interface ArticleData {
   excerpt: string;
   image_filename: string;
   sort_order: number;
-}
-
-// HMAC-SHA256 signing for secure unsubscribe tokens
-async function generateHMAC(message: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const messageData = encoder.encode(message);
-  
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    keyData,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  
-  const signature = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
-  return btoa(String.fromCharCode(...new Uint8Array(signature)));
 }
 
 // Helper to generate email content based on progress
