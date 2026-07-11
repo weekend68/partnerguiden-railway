@@ -1,0 +1,32 @@
+# Partnerguiden: Klimakteriet
+
+> En gratis kurs för partners till personer i klimakteriet. 13 artiklar med tillhörande quiz som förklarar vad som händer i kroppen och hjärnan under klimakteriet, och ger konkreta verktyg för att förstå, kommunicera och stötta bättre i vardagen.
+
+Partnerguiden riktar sig specifikt till *partnern* — inte till personen som själv genomgår klimakteriet. Innehållet är skrivet på svenska, evidensbaserat och empatiskt, och bygger på konkreta vardagssituationer snarare än ren medicinsk fakta. Varje artikel avslutas med ett kort quiz. Inloggning sker via engångslänk i mejl (ingen lösenord), och inloggade användare får sina framsteg och quizresultat sparade samt ett dagligt mejl med nästa artikel.
+
+## Artiklar
+
+- [Klimakteriet förklarat](https://partnerguiden.se/artikel/klimakteriet-forklarat): Vad som händer i hennes kropp – och varför det påverkar er vardag så mycket.
+- [Värmevallningar och sömnbrist](https://partnerguiden.se/artikel/varmevallningar): Vad som händer under natten när du sover – och varför hon är så trött på morgonen.
+- [När hjärnan inte orkar mer](https://partnerguiden.se/artikel/hjarnan-orkar-inte): Varför din fråga "vad ska vi äta?" kan vara droppen som får bägaren att rinna över.
+- [När minnet blir en sil](https://partnerguiden.se/artikel/glomska-fokus): Hon glömmer möten och tappar ord – vad som händer och hur du kan hjälpa.
+- [När känslorna blir starkare](https://partnerguiden.se/artikel/nar-varlden-skaver): Varför en handduk som ligger fel plötsligt blir en konflikt – och hur ni navigerar det.
+- [Oro som inte släpper taget](https://partnerguiden.se/artikel/oro-slapper-inte): Hon vaknar klockan fyra med hjärtat i halsgropen – så skapar ni trygghet tillsammans.
+- [Närhet på nya villkor](https://partnerguiden.se/artikel/narhet-pa-nya-villkor): När lusten förändras och beröringen blir komplicerad – så hittar ni tillbaka till varandra.
+- [Den främmande spegelbilden](https://partnerguiden.se/artikel/kropp-spegelbild): Byxorna passar inte längre fast hon äter som förut – så navigerar ni förändringen.
+- [När motivationen försvinner](https://partnerguiden.se/artikel/motivation-traning): Träningskläderna ligger orörda och hon som älskade att röra sig vill inte längre – varför.
+- [Att känna sig osynlig](https://partnerguiden.se/artikel/osynlighet-varde): Kollegan pratade över henne, servitören tittade förbi – hur du blir den som alltid ser.
+- [Att prata när det är svårt](https://partnerguiden.se/artikel/kommunikation-ar-svart): "Ta det lugnt" hjälper inte – konkreta fraser som faktiskt fungerar när det är laddat.
+- [När ni båda kämpar](https://partnerguiden.se/artikel/sandwich-generationen): Tonårsdottern slår igen dörren, din mamma ringer igen – när allt krockar samtidigt.
+- [Hormonbehandling: En guide](https://partnerguiden.se/artikel/hormonbehandling-hrt): Hon kom hem med recept på plåster – vad du behöver veta om HRT och varför.
+
+## Om sajten
+
+- [Alla artiklar](https://partnerguiden.se/artiklar): Fullständig lista över kursens 13 artiklar i rekommenderad läsordning.
+- [Om Partnerguiden](https://partnerguiden.se/om): Bakgrund och syfte med sajten.
+- [Integritetspolicy](https://partnerguiden.se/integritetspolicy): Hur personuppgifter och cookielös analys (Umami) hanteras.
+
+## Optional
+
+- [Skapa konto / logga in](https://partnerguiden.se/auth): Engångslänk-inloggning för att spara framsteg och få dagligt mejl.
+- [Avregistrera från mejlutskick](https://partnerguiden.se/avregistrera)
