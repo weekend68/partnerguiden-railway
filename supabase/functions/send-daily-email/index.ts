@@ -218,11 +218,6 @@ serve(async (req) => {
     let emailsSent = 0;
     let emailsSkipped = 0;
 
-    // Get today's date string for duplicate check
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
-
     for (const pref of preferences) {
       try {
         // In admin test mode, only send to admins
@@ -252,26 +247,6 @@ serve(async (req) => {
         // Check if all articles have been sent (journey complete)
         if (expectedArticleIndex >= TOTAL_ARTICLES) {
           console.log(`User ${pref.user_id} has completed the journey (day ${expectedArticleIndex + 1})`);
-          continue;
-        }
-
-        // Check if this article was already sent today (prevent duplicates)
-        const { data: todayEmails, error: todayError } = await supabase
-          .from("email_log")
-          .select("id")
-          .eq("user_id", pref.user_id)
-          .eq("article_index", expectedArticleIndex)
-          .gte("sent_at", todayStart)
-          .lt("sent_at", todayEnd);
-
-        if (todayError) {
-          console.error(`Error checking today's emails for ${pref.user_id}:`, todayError);
-          continue;
-        }
-
-        if (todayEmails && todayEmails.length > 0) {
-          console.log(`User ${pref.user_id} already received article ${expectedArticleIndex} today, skipping`);
-          emailsSkipped++;
           continue;
         }
 
@@ -347,9 +322,35 @@ serve(async (req) => {
         const subjectPrefix = isLastArticle ? "🎊" : "📖";
         const subjectSuffix = isLastArticle ? " (Sista artikeln!)" : "";
 
+        // Atomically reserve this (user, article) slot BEFORE calling Resend.
+        // UNIQUE(user_id, article_slug) makes this INSERT itself the lock: if
+        // pg_cron double-fires or an admin-test run overlaps the scheduled
+        // one, only one concurrent invocation's INSERT can succeed - the
+        // other gets a 23505 conflict here and skips, before ever reaching
+        // the Resend call. Previously the "already sent" check was a plain
+        // SELECT read long before the eventual log INSERT, with the Resend
+        // send itself in the gap - both invocations could pass the check
+        // and both actually send the email.
+        const { error: reserveError } = await supabase.from("email_log").insert({
+          user_id: pref.user_id,
+          article_slug: article.slug,
+          article_index: expectedArticleIndex,
+          status: "sent", // optimistic; corrected to 'failed' below if Resend actually errors
+        });
+
+        if (reserveError) {
+          if (reserveError.code === "23505") {
+            console.log(`User ${pref.user_id} already has a log entry for article ${expectedArticleIndex}, skipping`);
+            emailsSkipped++;
+          } else {
+            console.error(`Error reserving email log for ${pref.user_id}:`, reserveError);
+          }
+          continue;
+        }
+
         // Send email with Duolingo-style encouraging tone
         console.log(`Attempting to send email to ${userEmail} for article ${expectedArticleIndex}...`);
-        
+
         const emailResult = await resend.emails.send({
           from: "Partnerguiden: Klimakteriet <noreply@partnerguiden.se>",
           to: [userEmail],
@@ -439,33 +440,23 @@ serve(async (req) => {
         // Check for Resend API errors
         if (emailResult.error) {
           console.error(`Resend API error for ${userEmail}:`, emailResult.error);
-          
-          // Log failed email attempt
-          await supabase.from("email_log").insert({
-            user_id: pref.user_id,
-            article_slug: article.slug,
-            article_index: expectedArticleIndex,
-            status: "failed",
-            error_message: emailResult.error.message || JSON.stringify(emailResult.error),
-          });
-          
+
+          // Correct the optimistic 'sent' reservation to reflect the real outcome.
+          await supabase
+            .from("email_log")
+            .update({
+              status: "failed",
+              error_message: emailResult.error.message || JSON.stringify(emailResult.error),
+            })
+            .eq("user_id", pref.user_id)
+            .eq("article_slug", article.slug);
+
           continue;
         }
 
         console.log(`Email sent successfully to ${userEmail} (article ${expectedArticleIndex}):`, emailResult);
 
-        // Log the sent email
-        const { error: logError } = await supabase.from("email_log").insert({
-          user_id: pref.user_id,
-          article_slug: article.slug,
-          article_index: expectedArticleIndex,
-          status: "sent",
-        });
-
-        if (logError) {
-          console.error(`Error logging email for ${pref.user_id}:`, logError);
-        }
-
+        // Already logged as 'sent' by the reservation insert above - nothing more to do.
         emailsSent++;
       } catch (userError) {
         console.error(`Error processing user ${pref.user_id}:`, userError);
