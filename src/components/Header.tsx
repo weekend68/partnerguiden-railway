@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { User, LogOut } from "lucide-react";
@@ -27,7 +29,7 @@ const Header = () => {
   return (
     <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="font-serif text-lg sm:text-xl font-semibold text-foreground leading-tight">
+        <Link href="/" className="font-serif text-lg sm:text-xl font-semibold text-foreground leading-tight">
           <span className="sm:hidden">
             Partnerguiden:
             <br />
@@ -37,7 +39,7 @@ const Header = () => {
         </Link>
         <nav className="flex items-center gap-2 sm:gap-4">
           <Link
-            to="/artiklar"
+            href="/artiklar"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
           >
             Alla artiklar
@@ -58,7 +60,7 @@ const Header = () => {
             </div>
           ) : (
             <Button asChild variant="outline" size="sm" className="rounded-full">
-              <Link to="/auth" aria-label="Skapa konto">
+              <Link href="/auth" aria-label="Skapa konto">
                 <User className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Skapa konto</span>
               </Link>

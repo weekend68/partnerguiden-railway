@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { ArticleList, type Article } from "./ArticleList";
 import { ArticleEditor } from "./ArticleEditor";
