@@ -24,6 +24,29 @@ function escapeHtml(str: string): string {
 const RATE_LIMIT_MAX = 5; // Max requests per window
 const RATE_LIMIT_WINDOW_SECONDS = 60;
 
+// listUsers() defaults to a single page of 50 users. Past that many total
+// users, a naive single call misses anyone not on page 1 - verified live
+// against this project with a small per_page that older users don't
+// return on page 1. Walk pages until a short page confirms the end.
+async function findUserByEmail(
+  supabase: any,
+  email: string
+) {
+  const perPage = 1000;
+  let page = 1;
+
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) return { user: null, error };
+
+    const match = data.users.find((u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase());
+    if (match) return { user: match, error: null };
+
+    if (data.users.length < perPage) return { user: null, error: null };
+    page++;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -78,9 +101,16 @@ serve(async (req) => {
     console.log(`Processing magic link request for ${email}`);
 
     // Check if user exists
-    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
-    
-    let user = existingUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+    const { user: foundUser, error: listError } = await findUserByEmail(supabase, email);
+    if (listError) {
+      console.error("Error listing users:", listError);
+      return new Response(
+        JSON.stringify({ error: "Kunde inte slå upp användare" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let user = foundUser;
     let isNewUser = false;
 
     if (!user) {

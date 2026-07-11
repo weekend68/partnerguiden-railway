@@ -5,6 +5,30 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// PostgREST silently caps unpaginated selects at the project's configured
+// Max Rows setting (1000 for this project) with no error - past that many
+// rows, a plain .select() just returns a truncated result. This walks
+// `.range()` pages until a short page confirms we've reached the end, so
+// these stats stay correct regardless of table size.
+async function fetchAllRows<T>(
+  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  pageSize = 1000
+): Promise<{ data: T[]; error: unknown }> {
+  const allRows: T[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await buildQuery(from, from + pageSize - 1);
+    if (error) return { data: allRows, error };
+    if (!data || data.length === 0) break;
+    allRows.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return { data: allRows, error: null };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -84,9 +108,12 @@ Deno.serve(async (req) => {
     }
 
     // 2. All progress data with article info (use article_id, not article_slug)
-    const { data: progressData, error: progressError } = await adminClient
-      .from("user_progress")
-      .select("user_id, article_id, article_read, quiz_completed, quiz_score");
+    const { data: progressData, error: progressError } = await fetchAllRows((from, to) =>
+      adminClient
+        .from("user_progress")
+        .select("user_id, article_id, article_read, quiz_completed, quiz_score")
+        .range(from, to)
+    );
 
     if (progressError) {
       console.error("Error fetching progress:", progressError);
@@ -196,11 +223,14 @@ Deno.serve(async (req) => {
       .map(([date, count]) => ({ date, count }));
 
     // 5. User engagement - quiz activity per day (last 30 days)
-    const { data: recentProgress, error: recentProgressError } = await adminClient
-      .from("user_progress")
-      .select("user_id, updated_at, quiz_completed")
-      .gte("updated_at", thirtyDaysAgo.toISOString())
-      .eq("quiz_completed", true);
+    const { data: recentProgress, error: recentProgressError } = await fetchAllRows((from, to) =>
+      adminClient
+        .from("user_progress")
+        .select("user_id, updated_at, quiz_completed")
+        .gte("updated_at", thirtyDaysAgo.toISOString())
+        .eq("quiz_completed", true)
+        .range(from, to)
+    );
 
     if (recentProgressError) {
       console.error("Error fetching recent progress:", recentProgressError);

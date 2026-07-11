@@ -21,6 +21,29 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
+// listUsers() defaults to a single page of 50 users. Past that many total
+// users, a naive single call misses anyone not on page 1 - verified live
+// against this project with a small per_page that older users don't
+// return on page 1. Walk pages until a short page confirms the end.
+async function findUserByEmail(
+  supabase: any,
+  email: string
+) {
+  const perPage = 1000;
+  let page = 1;
+
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) return { user: null, error };
+
+    const match = data.users.find((u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase());
+    if (match) return { user: match, error: null };
+
+    if (data.users.length < perPage) return { user: null, error: null };
+    page++;
+  }
+}
+
 // HMAC-SHA256 for unsubscribe link
 async function generateHMAC(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -159,10 +182,7 @@ serve(async (req) => {
     // caller-supplied user_id directly - accepting an arbitrary user_id from
     // an unauthenticated request would let anyone mint a valid signed
     // unsubscribe token for any account (see security review finding).
-    const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers();
-    const matchedUser = existingUsers?.users?.find(
-      (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
-    );
+    const { user: matchedUser, error: listError } = await findUserByEmail(supabase, email);
 
     if (listError || !matchedUser) {
       return new Response(
