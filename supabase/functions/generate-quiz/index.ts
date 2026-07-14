@@ -116,47 +116,98 @@ Svara ENDAST med giltig JSON i exakt detta format:
   ]
 }`;
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
-      {
-        method: "POST",
-        headers: {
-          "x-goog-api-key": GEMINI_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [
+    // Gemini returns 503/UNAVAILABLE fairly often when the model is under
+    // heavy load ("high demand" - Google's own wording, not a real outage).
+    // That's transient, so it's worth a couple of retries with backoff rather
+    // than failing the whole quiz immediately. Each attempt gets its own
+    // timeout so one slow response can't burn the entire retry budget.
+    const GEMINI_TIMEOUT_MS = 20_000;
+    const GEMINI_MAX_ATTEMPTS = 3;
+    const GEMINI_BACKOFF_MS = [1000, 3000];
+
+    const requestBody = JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [
+        {
+          role: "user",
+          parts: [
             {
-              role: "user",
-              parts: [
-                {
-                  text: `Artikel: "${articleTitle}"\n\nInnehåll:\n${articleContent.substring(0, 3000)}`,
-                },
-              ],
+              text: `Artikel: "${articleTitle}"\n\nInnehåll:\n${articleContent.substring(0, 3000)}`,
             },
           ],
-        }),
+        },
+      ],
+    });
+
+    let response: Response | null = null;
+    let lastErrorStatus = 0;
+    let lastErrorText = "";
+
+    for (let attempt = 1; attempt <= GEMINI_MAX_ATTEMPTS; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+
+      try {
+        response = await fetch(
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+          {
+            method: "POST",
+            headers: {
+              "x-goog-api-key": GEMINI_API_KEY,
+              "Content-Type": "application/json",
+            },
+            body: requestBody,
+            signal: controller.signal,
+          }
+        );
+      } catch (fetchError) {
+        response = null;
+        lastErrorStatus = 0;
+        lastErrorText = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      } finally {
+        clearTimeout(timeout);
       }
-    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      if (response?.ok) break;
 
-      if (response.status === 429) {
+      if (response) {
+        lastErrorStatus = response.status;
+        lastErrorText = await response.text();
+
+        // Only retry on transient overload - not on rate limits, auth
+        // errors, or bad requests, which won't be fixed by trying again.
+        if (response.status !== 503) break;
+      }
+
+      console.error(`Gemini API attempt ${attempt}/${GEMINI_MAX_ATTEMPTS} failed:`, lastErrorStatus, lastErrorText);
+
+      if (attempt < GEMINI_MAX_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, GEMINI_BACKOFF_MS[attempt - 1]));
+      }
+    }
+
+    if (!response?.ok) {
+      console.error("Gemini API error after retries:", lastErrorStatus, lastErrorText);
+
+      if (lastErrorStatus === 429) {
         return new Response(JSON.stringify({ error: "För många förfrågningar, vänta en stund." }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
+      if (lastErrorStatus === 402) {
         return new Response(JSON.stringify({ error: "Krediter slut, kontakta support." }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      throw new Error(`Gemini API error: ${response.status}`);
+      if (lastErrorStatus === 503 || lastErrorStatus === 0) {
+        return new Response(
+          JSON.stringify({ error: "Quiz-tjänsten är överbelastad just nu. Försök igen om en liten stund." }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`Gemini API error: ${lastErrorStatus}`);
     }
 
     const data = await response.json();
