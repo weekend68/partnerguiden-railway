@@ -79,6 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        <link rel="alternate" type="application/rss+xml" title="Partnerguiden: Klimakteriet" href="/feed.xml" />
       </head>
       <body>
         <Providers>{children}</Providers>
