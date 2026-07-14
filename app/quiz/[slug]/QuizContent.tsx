@@ -76,29 +76,27 @@ export function QuizContent({ slug }: { slug: string }) {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/generate-quiz`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            articleTitle: article.title,
-            articleContent: article.content,
-          }),
-        });
+        const { data, error } = await supabase
+          .from("quiz_questions")
+          .select("question, options, correct_index, explanation")
+          .eq("article_id", article.id)
+          .order("sort_order", { ascending: true });
 
-        if (!response.ok) {
-          const data = await response.json();
-          if (response.status === 429) {
-            setError("För många förfrågningar. Vänta en stund och försök igen.");
-            return;
-          }
-          throw new Error(data.error || "Kunde inte generera quiz");
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          setError("Quiz för den här artikeln är inte tillgängligt just nu.");
+          return;
         }
 
-        const data = await response.json();
-        setQuestions(data.questions);
+        setQuestions(
+          data.map((q) => ({
+            question: q.question,
+            options: q.options as string[],
+            correctIndex: q.correct_index,
+            explanation: q.explanation,
+          }))
+        );
         track("quiz_started", { article_slug: slug ?? "" });
       } catch (err) {
         console.error("Quiz error:", err);
@@ -224,7 +222,7 @@ export function QuizContent({ slug }: { slug: string }) {
 
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-            <p className="text-muted-foreground font-body">Genererar quiz baserat på artikeln...</p>
+            <p className="text-muted-foreground font-body">Laddar quiz...</p>
           </div>
         </div>
       </div>
