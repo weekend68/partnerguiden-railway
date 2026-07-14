@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   openGraph: { url: "/artiklar" },
 };
 
+const SITE_URL = "https://partnerguiden.se";
+
 function getImageUrl(article: { image_url: string | null; image_filename: string }) {
   if (article.image_url) return article.image_url;
   return `/images/${article.image_filename}`;
@@ -23,8 +25,25 @@ function getImageUrl(article: { image_url: string | null; image_filename: string
 export default async function ArticlesPage() {
   const articles = await getArticles();
 
+  const structuredDataJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Alla artiklar",
+    url: `${SITE_URL}/artiklar`,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: articles.map((article, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: article.title,
+        url: `${SITE_URL}/artikel/${article.slug}`,
+      })),
+    },
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredDataJsonLd) }} />
       <Header />
       <ArticlesProgressBanner />
 
