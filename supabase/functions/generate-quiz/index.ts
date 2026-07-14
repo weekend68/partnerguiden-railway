@@ -6,90 +6,95 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Persistent, atomic rate limiting via the rate_limits table + check_rate_limit()
-// Postgres function (see migration 20260711130000_add_rate_limits.sql). Replaces
-// an in-memory per-isolate Map, which was verified live to not actually limit
-// anything - Supabase Edge Function isolates don't reliably reuse in-memory
-// state across invocations.
-const RATE_LIMIT_MAX = 10; // Max requests per window
-const RATE_LIMIT_WINDOW_SECONDS = 60;
-
+// Quiz questions are generated here as an admin-triggered draft (reviewed and
+// saved via the article editor's normal save flow into quiz_questions), not
+// live per-visitor anymore - Gemini's latency/503-under-load made on-demand
+// generation for every quiz page load unusable.
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get client IP for rate limiting
-    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      || req.headers.get("cf-connecting-ip")
-      || req.headers.get("x-real-ip")
-      || "unknown";
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const { data: allowed, error: rateLimitError } = await supabase.rpc("check_rate_limit", {
-      p_key: `generate-quiz:${clientIP}`,
-      p_limit: RATE_LIMIT_MAX,
-      p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
     });
 
-    if (rateLimitError) {
-      // Fail open on infra errors rather than blocking quiz generation if
-      // the rate_limits table/function is ever unavailable.
-      console.error("Rate limit check failed:", rateLimitError);
-    } else if (!allowed) {
-      console.log("Rate limited IP:", clientIP);
-      return new Response(
-        JSON.stringify({ error: "För många förfrågningar. Vänta en stund och försök igen." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: roleData, error: roleError } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError) {
+      console.error("Error checking admin role:", roleError);
+      return new Response(JSON.stringify({ error: "Error checking permissions" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: "Forbidden - Admin access required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const body = await req.json();
-    const { articleTitle, articleContent } = body;
+    const { articleId } = body;
 
-    // Input validation
-    if (!articleTitle || typeof articleTitle !== "string") {
-      return new Response(JSON.stringify({ error: "Invalid article title" }), {
+    if (!articleId || typeof articleId !== "string") {
+      return new Response(JSON.stringify({ error: "Invalid article id" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!articleContent || typeof articleContent !== "string") {
-      return new Response(JSON.stringify({ error: "Invalid article content" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Article content is looked up server-side rather than trusted from the
+    // client, same as the send-welcome-email/verify-email-token fixes.
+    const { data: article, error: articleError } = await adminClient
+      .from("articles")
+      .select("title, content")
+      .eq("id", articleId)
+      .maybeSingle();
 
-    // Enforce reasonable length limits to prevent resource exhaustion
-    if (articleTitle.length > 200) {
-      return new Response(JSON.stringify({ error: "Article title too long (max 200 characters)" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (articleContent.length > 50000) {
-      return new Response(JSON.stringify({ error: "Article content too long (max 50000 characters)" }), {
-        status: 400,
+    if (articleError || !article) {
+      return new Response(JSON.stringify({ error: "Article not found" }), {
+        status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-
     if (!GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    console.log("Generating quiz for article:", articleTitle, "from IP:", clientIP);
+    console.log("Generating quiz for article:", article.title, "requested by admin:", user.id);
 
     const systemPrompt = `Du är en expert på att skapa reflekterande quizfrågor för par som vill förstå klimakteriet bättre.
 
@@ -119,8 +124,8 @@ Svara ENDAST med giltig JSON i exakt detta format:
     // Gemini returns 503/UNAVAILABLE fairly often when the model is under
     // heavy load ("high demand" - Google's own wording, not a real outage).
     // That's transient, so it's worth a couple of retries with backoff rather
-    // than failing the whole quiz immediately. Each attempt gets its own
-    // timeout so one slow response can't burn the entire retry budget.
+    // than failing immediately. Each attempt gets its own timeout so one slow
+    // response can't burn the entire retry budget.
     const GEMINI_TIMEOUT_MS = 20_000;
     const GEMINI_MAX_ATTEMPTS = 3;
     const GEMINI_BACKOFF_MS = [1000, 3000];
@@ -132,7 +137,7 @@ Svara ENDAST med giltig JSON i exakt detta format:
           role: "user",
           parts: [
             {
-              text: `Artikel: "${articleTitle}"\n\nInnehåll:\n${articleContent.substring(0, 3000)}`,
+              text: `Artikel: "${article.title}"\n\nInnehåll:\n${article.content.substring(0, 3000)}`,
             },
           ],
         },
@@ -215,7 +220,6 @@ Svara ENDAST med giltig JSON i exakt detta format:
 
     console.log("Raw AI response:", content);
 
-    // Parse the JSON from the response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("Could not parse quiz from AI response");
