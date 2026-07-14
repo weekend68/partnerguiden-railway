@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { FAQEditor, type FAQ } from "./FAQEditor";
+import { QuizEditor, type QuizQuestionDraft } from "./QuizEditor";
 
 interface Article {
   id: string;
@@ -50,8 +51,11 @@ export function ArticleEditor({ article, onBack, onSave }: ArticleEditorProps) {
   const [savedData, setSavedData] = useState<Article>(article);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [savedFaqs, setSavedFaqs] = useState<FAQ[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestionDraft[]>([]);
+  const [savedQuizQuestions, setSavedQuizQuestions] = useState<QuizQuestionDraft[]>([]);
   const [saving, setSaving] = useState(false);
   const [loadingFaqs, setLoadingFaqs] = useState(true);
+  const [loadingQuiz, setLoadingQuiz] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
@@ -77,6 +81,31 @@ export function ArticleEditor({ article, onBack, onSave }: ArticleEditorProps) {
     fetchFaqs();
   }, [article.id]);
 
+  // Fetch quiz questions on mount
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      const { data, error } = await supabase
+        .from("quiz_questions")
+        .select("id, question, options, correct_index, explanation, sort_order")
+        .eq("article_id", article.id)
+        .order("sort_order", { ascending: true });
+
+      if (!error && data) {
+        const quizData = data.map((q) => ({
+          ...q,
+          options: q.options as string[],
+          isNew: false,
+          isDeleted: false,
+        }));
+        setQuizQuestions(quizData);
+        setSavedQuizQuestions(quizData);
+      }
+      setLoadingQuiz(false);
+    };
+
+    fetchQuiz();
+  }, [article.id]);
+
   // Check if FAQs have changed
   const faqsChanged = useMemo(() => {
     const visibleFaqs = faqs.filter((f) => !f.isDeleted);
@@ -96,18 +125,39 @@ export function ArticleEditor({ article, onBack, onSave }: ArticleEditorProps) {
     });
   }, [faqs, savedFaqs]);
 
+  // Check if quiz questions have changed
+  const quizChanged = useMemo(() => {
+    const visibleQuiz = quizQuestions.filter((q) => !q.isDeleted);
+    const visibleSavedQuiz = savedQuizQuestions.filter((q) => !q.isDeleted);
+
+    if (visibleQuiz.length !== visibleSavedQuiz.length) return true;
+
+    return visibleQuiz.some((q, index) => {
+      const saved = visibleSavedQuiz[index];
+      if (!saved) return true;
+      return (
+        q.id !== saved.id ||
+        q.question !== saved.question ||
+        q.explanation !== saved.explanation ||
+        q.correct_index !== saved.correct_index ||
+        q.sort_order !== saved.sort_order ||
+        q.options.some((option, i) => option !== saved.options[i])
+      );
+    });
+  }, [quizQuestions, savedQuizQuestions]);
+
   // Check if there are unsaved changes (compare to last saved state)
   const hasUnsavedChanges = useMemo(() => {
-    const articleChanged = 
+    const articleChanged =
       formData.title !== savedData.title ||
       formData.slug !== savedData.slug ||
       formData.excerpt !== savedData.excerpt ||
       formData.content !== savedData.content ||
       formData.image_filename !== savedData.image_filename ||
       formData.image_alt !== savedData.image_alt;
-    
-    return articleChanged || faqsChanged;
-  }, [formData, savedData, faqsChanged]);
+
+    return articleChanged || faqsChanged || quizChanged;
+  }, [formData, savedData, faqsChanged, quizChanged]);
 
   // Warn before closing browser/tab with unsaved changes
   useEffect(() => {
@@ -203,6 +253,65 @@ export function ArticleEditor({ article, onBack, onSave }: ArticleEditorProps) {
         const faqData = refreshedFaqs.map((f) => ({ ...f, isNew: false, isDeleted: false }));
         setFaqs(faqData);
         setSavedFaqs(faqData);
+      }
+
+      // Handle quiz question operations
+      const quizToDelete = quizQuestions.filter((q) => q.isDeleted && !q.isNew);
+      const quizToInsert = quizQuestions.filter((q) => q.isNew && !q.isDeleted);
+      const quizToUpdate = quizQuestions.filter((q) => !q.isNew && !q.isDeleted);
+
+      if (quizToDelete.length > 0) {
+        const { error } = await supabase
+          .from("quiz_questions")
+          .delete()
+          .in("id", quizToDelete.map((q) => q.id));
+        if (error) throw error;
+      }
+
+      if (quizToInsert.length > 0) {
+        const { error } = await supabase.from("quiz_questions").insert(
+          quizToInsert.map((q) => ({
+            article_id: article.id,
+            question: q.question,
+            options: q.options,
+            correct_index: q.correct_index,
+            explanation: q.explanation,
+            sort_order: q.sort_order,
+          }))
+        );
+        if (error) throw error;
+      }
+
+      for (const q of quizToUpdate) {
+        const { error } = await supabase
+          .from("quiz_questions")
+          .update({
+            question: q.question,
+            options: q.options,
+            correct_index: q.correct_index,
+            explanation: q.explanation,
+            sort_order: q.sort_order,
+          })
+          .eq("id", q.id);
+        if (error) throw error;
+      }
+
+      // Refresh quiz questions from database
+      const { data: refreshedQuiz } = await supabase
+        .from("quiz_questions")
+        .select("id, question, options, correct_index, explanation, sort_order")
+        .eq("article_id", article.id)
+        .order("sort_order", { ascending: true });
+
+      if (refreshedQuiz) {
+        const quizData = refreshedQuiz.map((q) => ({
+          ...q,
+          options: q.options as string[],
+          isNew: false,
+          isDeleted: false,
+        }));
+        setQuizQuestions(quizData);
+        setSavedQuizQuestions(quizData);
       }
 
       setSavedData(formData);
@@ -340,6 +449,11 @@ export function ArticleEditor({ article, onBack, onSave }: ArticleEditorProps) {
           {/* FAQ Editor */}
           {!loadingFaqs && (
             <FAQEditor faqs={faqs} onChange={setFaqs} />
+          )}
+
+          {/* Quiz Editor */}
+          {!loadingQuiz && (
+            <QuizEditor articleId={article.id} questions={quizQuestions} onChange={setQuizQuestions} />
           )}
         </div>
 
