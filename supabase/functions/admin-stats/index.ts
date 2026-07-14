@@ -258,13 +258,30 @@ Deno.serve(async (req) => {
       }
     });
 
-    const topActiveUsers = Array.from(userQuizCounts.entries())
+    const topUserIds = Array.from(userQuizCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
-      .map(([userId, quizzes]) => ({ 
-        userId: userId.substring(0, 8) + "...", // Anonymize
-        quizzesCompleted: quizzes 
-      }));
+      .map(([userId]) => userId);
+
+    const { data: topUserProfiles, error: topUserProfilesError } = await adminClient
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", topUserIds);
+
+    if (topUserProfilesError) {
+      console.error("Error fetching top user profiles:", topUserProfilesError);
+    }
+
+    const displayNameById = new Map<string, string>();
+    (topUserProfiles || []).forEach(p => {
+      if (p.display_name) displayNameById.set(p.id, p.display_name);
+    });
+
+    const topActiveUsers = topUserIds.map(userId => ({
+      userId,
+      displayName: displayNameById.get(userId) || `Användare ${userId.substring(0, 8)}`,
+      quizzesCompleted: userQuizCounts.get(userId)!,
+    }));
 
     const stats = {
       totalUsers: totalUsers || 0,

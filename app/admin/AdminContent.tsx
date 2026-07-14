@@ -27,7 +27,7 @@ interface AdminStats {
   quizStats: { slug: string; completions: number; averageScore: number }[];
   dailySignups?: { date: string; count: number }[];
   dailyActiveUsers?: { date: string; count: number }[];
-  topActiveUsers?: { userId: string; quizzesCompleted: number }[];
+  topActiveUsers?: { userId: string; displayName: string; quizzesCompleted: number }[];
 }
 
 export function AdminContent() {
@@ -368,7 +368,7 @@ export function AdminContent() {
                           <div key={topUser.userId} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
                             <span className="text-lg font-bold text-primary">#{index + 1}</span>
                             <div className="text-sm">
-                              <span className="text-muted-foreground font-mono">{topUser.userId}</span>
+                              <span className="text-foreground">{topUser.displayName}</span>
                               <div className="font-medium">{topUser.quizzesCompleted}/13 quiz</div>
                             </div>
                           </div>
