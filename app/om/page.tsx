@@ -43,6 +43,15 @@ export default function AboutPage() {
             spara dina framsteg och få artiklarna skickade till din mejl.
           </p>
 
+          <h2 className="text-xl font-heading font-semibold mt-8 mb-4">Vem står bakom Partnerguiden?</h2>
+          <p>
+            Jag heter Johan Möller och har skapat och redigerar Partnerguiden. Jag är inte läkare eller
+            klimakterieexpert – artiklarna är AI-genererade utifrån etablerad forskning och medicinsk litteratur om
+            klimakteriet, och jag har läst igenom och redigerat varje artikel för att de ska vara tydliga, empatiska
+            och praktiskt användbara. Innehållet är alltså inte faktagranskat av vårdpersonal, så använd det som ett
+            komplement till – inte en ersättning för – samtal med läkare eller barnmorska.
+          </p>
+
           <h2 className="text-xl font-heading font-semibold mt-8 mb-4">Kontakt</h2>
           <p>
             Partnerguiden är ett ideellt projekt skapat med målet att öka förståelsen för klimakteriet och stärka

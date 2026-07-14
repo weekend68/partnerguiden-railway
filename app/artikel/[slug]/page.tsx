@@ -78,8 +78,8 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         datePublished: article.published_at || article.updated_at,
         dateModified: article.updated_at,
         author: {
-          "@type": "Organization",
-          name: "Partnerguiden",
+          "@type": "Person",
+          name: "Johan Möller",
           url: `${SITE_URL}/om`,
         },
         publisher: {
@@ -169,7 +169,20 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           Artikel {currentIndex + 1} av {allArticles.length}
         </div>
 
-        <h1 className="font-serif text-3xl md:text-4xl font-medium mb-6 text-balance">{article.title}</h1>
+        <h1 className="font-serif text-3xl md:text-4xl font-medium mb-3 text-balance">{article.title}</h1>
+
+        <p className="text-sm text-muted-foreground mb-6">
+          Skapad av{" "}
+          <Link href="/om" className="underline underline-offset-2 hover:text-foreground transition-colors">
+            Johan Möller
+          </Link>{" "}
+          · Uppdaterad{" "}
+          {new Date(article.updated_at).toLocaleDateString("sv-SE", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          })}
+        </p>
 
         <article className="prose-relateify text-lg leading-relaxed">
           <ReactMarkdown
