@@ -43,10 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const refresh_token = params.get("refresh_token");
 
       if (access_token && refresh_token) {
-        supabase.auth.setSession({ access_token, refresh_token }).then(() => {
-          // Strip the tokens from the URL so they don't linger in history.
-          window.history.replaceState(null, "", window.location.pathname + window.location.search);
-        });
+        // Strip the tokens from the URL immediately, before the async setSession
+        // call resolves - otherwise analytics scripts (and browser history) can
+        // capture the raw JWTs from location.hash in the window before cleanup.
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        supabase.auth.setSession({ access_token, refresh_token });
       }
     } else {
       // THEN check for existing session

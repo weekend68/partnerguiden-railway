@@ -84,7 +84,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Providers>{children}</Providers>
         {umamiWebsiteId && umamiScriptUrl && (
-          <Script defer data-website-id={umamiWebsiteId} src={umamiScriptUrl} strategy="afterInteractive" />
+          <Script
+            defer
+            data-website-id={umamiWebsiteId}
+            data-exclude-hash="true"
+            src={umamiScriptUrl}
+            strategy="afterInteractive"
+          />
         )}
       </body>
     </html>
