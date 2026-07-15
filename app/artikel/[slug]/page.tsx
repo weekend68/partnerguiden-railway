@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ArrowLeft, ArrowRight, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -173,6 +174,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
         <article className="prose-relateify text-lg leading-relaxed">
           <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
             components={{
               h2: ({ children }) => (
                 <h2 className="font-serif text-2xl font-semibold mt-10 mb-4 text-foreground">{children}</h2>
@@ -191,16 +193,18 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
                   {children}
                 </blockquote>
               ),
-              a: ({ href, children }) => (
-                <a
-                  href={href}
-                  className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {children}
-                </a>
-              ),
+              a: ({ href, children }) => {
+                const isAnchor = href?.startsWith("#");
+                return (
+                  <a
+                    href={href}
+                    className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+                    {...(!isAnchor && { target: "_blank", rel: "noopener noreferrer" })}
+                  >
+                    {children}
+                  </a>
+                );
+              },
               hr: () => <hr className="my-8 border-border" />,
             }}
           >

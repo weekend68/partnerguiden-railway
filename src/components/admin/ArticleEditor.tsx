@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -466,7 +467,7 @@ export function ArticleEditor({ article, onBack, onSave }: ArticleEditorProps) {
             <CardContent className="prose prose-sm max-w-none">
               <h1>{formData.title}</h1>
               <p className="lead text-muted-foreground">{formData.excerpt}</p>
-              <ReactMarkdown>{formData.content}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{formData.content}</ReactMarkdown>
             </CardContent>
           </Card>
         )}
