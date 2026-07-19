@@ -176,9 +176,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
-              h2: ({ children }) => (
-                <h2 className="font-serif text-2xl font-semibold mt-10 mb-4 text-foreground">{children}</h2>
-              ),
+              h2: ({ id, children }) =>
+                id === "footnote-label" ? (
+                  <h2 id={id} className="sr-only">
+                    {children}
+                  </h2>
+                ) : (
+                  <h2 className="font-serif text-2xl font-semibold mt-10 mb-4 text-foreground">{children}</h2>
+                ),
               h3: ({ children }) => (
                 <h3 className="font-serif text-xl font-medium mt-8 mb-3 text-foreground">{children}</h3>
               ),
