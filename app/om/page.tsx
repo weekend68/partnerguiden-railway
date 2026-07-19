@@ -57,11 +57,22 @@ export default function AboutPage() {
             Partnerguiden är ett ideellt projekt skapat med målet att öka förståelsen för klimakteriet och stärka
             relationer under denna livsfas.
           </p>
-          <p>Kontakta mig gärna på hello.johan.moller (a) gmail.com om du har feedback på tjänsten.</p>
-
-          <p className="text-muted-foreground mt-12">
-            Tack för att du tar dig tid att lära dig mer. Det är ett av de finaste sätten att visa att du bryr dig.
+          <p>
+            Kontakta mig gärna via{" "}
+            <a
+              href="https://moller-co.se/johan"
+              className="underline underline-offset-2 hover:text-foreground transition-colors"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              min hemsida
+            </a>{" "}
+            om du har feedback på tjänsten.
           </p>
+
+          <hr className="my-8 border-border" />
+
+          <p>Tack för att du tar dig tid att lära dig mer. Det är ett av de finaste sätten att visa att du bryr dig.</p>
         </div>
       </main>
       <Footer />
