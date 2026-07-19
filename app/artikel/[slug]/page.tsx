@@ -230,6 +230,25 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           })}
         </p>
 
+        {article.slug === "hormonbehandling-hrt" && (
+          <a
+            href="https://varfinnsdet.se/kategori/G03CA03-estradiol?utm_source=partnerguiden"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 justify-between rounded-lg border border-border bg-muted/30 p-5 hover:bg-muted/50 transition-colors"
+          >
+            <p className="text-sm text-foreground/90">
+              Har apoteket sagt att preparatet är slut i lager? <span className="font-medium">Var finns det?</span>{" "}
+              bevakar lagerstatus hos Sveriges apotek i realtid – sök upp namnet och se var det finns, eller ställ in
+              en gratis bevakning så får du ett mejl så fort det är tillbaka.
+            </p>
+            <span className="inline-flex items-center justify-center gap-2 rounded-full bg-primary text-primary-foreground px-5 py-2.5 text-sm font-medium whitespace-nowrap self-start sm:self-center">
+              Kolla lagerstatus
+              <ArrowRight className="h-4 w-4" />
+            </span>
+          </a>
+        )}
+
         <ArticleQuizCta
           articleId={article.id}
           slug={article.slug}
