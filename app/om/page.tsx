@@ -58,14 +58,14 @@ export default function AboutPage() {
             relationer under denna livsfas.
           </p>
           <p>
-            Kontakta mig gärna via{" "}
+            Kontakta gärna{" "}
             <a
               href="https://moller-co.se/johan"
               className="underline underline-offset-2 hover:text-foreground transition-colors"
               target="_blank"
               rel="noopener noreferrer"
             >
-              min hemsida
+              Johan Möller
             </a>{" "}
             om du har feedback på tjänsten.
           </p>
