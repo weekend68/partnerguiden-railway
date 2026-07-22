@@ -47,7 +47,7 @@ export default function AboutPage() {
           <p>
             Jag heter Johan Möller och har skapat och redigerar Partnerguiden. Jag är inte läkare eller
             klimakterieexpert – artiklarna är AI-genererade utifrån etablerad forskning och medicinsk litteratur om
-            klimakteriet, och jag har läst igenom och redigerat varje artikel för att de ska vara tydliga, empatiska
+            klimakteriet, och jag har redigerat varje artikel för att de ska vara tydliga, empatiska
             och praktiskt användbara. Innehållet är alltså inte faktagranskat av vårdpersonal, så använd det som ett
             komplement till – inte en ersättning för – samtal med läkare eller barnmorska.
           </p>
