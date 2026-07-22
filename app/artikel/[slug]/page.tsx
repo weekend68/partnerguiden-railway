@@ -218,7 +218,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </article>
 
         <p className="text-sm text-muted-foreground mt-8 mb-6">
-          Skapad av{" "}
+          Redaktör:{" "}
           <Link href="/om" className="underline underline-offset-2 hover:text-foreground transition-colors">
             Johan Möller
           </Link>{" "}
