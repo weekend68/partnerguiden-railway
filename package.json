@@ -8,9 +8,10 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npm run copy:standalone",
     "lint": "eslint .",
-    "start": "next start -p ${PORT:-3000}"
+    "start": "HOSTNAME=0.0.0.0 node --max-old-space-size=256 .next/standalone/server.js",
+    "copy:standalone": "mkdir -p .next/standalone/public .next/standalone/.next/static && cp -r public/. .next/standalone/public/ && cp -r .next/static/. .next/standalone/.next/static/"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

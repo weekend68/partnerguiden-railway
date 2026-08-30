@@ -4,4 +4,16 @@ providers = ["node"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npm run start"
+# Run node directly rather than through `npm run start`: the npm wrapper is an
+# extra resident process for no benefit.
+#
+# --max-old-space-size caps the heap so V8 actually compacts. Without it Node
+# sizes the heap from host memory (several GB), so an idle server never hits a
+# threshold that triggers a full GC and its RSS ratchets upward for weeks.
+# Deliberately a start flag, not a NODE_OPTIONS service variable: that would
+# also apply to `next build`, which needs far more headroom.
+#
+# HOSTNAME is pinned because the generated server.js does
+# `process.env.HOSTNAME || '0.0.0.0'`, and container runtimes commonly set
+# HOSTNAME to the container id.
+cmd = "HOSTNAME=0.0.0.0 node --max-old-space-size=256 .next/standalone/server.js"
