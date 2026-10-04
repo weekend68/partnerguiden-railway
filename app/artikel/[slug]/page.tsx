@@ -232,7 +232,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
         {article.slug === "hormonbehandling-hrt" && (
           <a
-            href="https://varfinnsdet.se/kategori/G03CA03-estradiol?utm_source=partnerguiden"
+            href="https://varfinnsdet.se/kategori/G03CA03-estradiol?utm_source=partnerguiden.se&utm_medium=referral&utm_campaign=article-link&utm_content=estradiol"
             target="_blank"
             rel="noopener noreferrer"
             className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4 justify-between rounded-lg border border-border bg-muted/30 p-5 hover:bg-muted/50 transition-colors"
