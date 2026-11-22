@@ -1,0 +1,17 @@
+# Weekly dependency updates, grouped so minor and patch bumps arrive as one
+# pull request per ecosystem instead of one per package. Security updates
+# additionally need "Dependabot alerts" and "security updates" switched on
+# under the repository's Settings → Code security.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Stockholm
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
