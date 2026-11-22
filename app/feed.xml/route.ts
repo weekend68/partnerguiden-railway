@@ -2,6 +2,10 @@ import { getFullArticles } from "@/lib/data";
 
 const SITE_URL = "https://partnerguiden.se";
 
+// Next 15 no longer caches GET route handlers by default. Keep the feed
+// prerendered at build time, as it was on Next 14.
+export const dynamic = "force-static";
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
