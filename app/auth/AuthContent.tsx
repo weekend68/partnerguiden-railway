@@ -51,14 +51,14 @@ export function AuthContent() {
       setEmailSent(true);
       setSubmittedEmail(email);
       track("magic_link_requested", { is_new_user: !!data.isNewUser });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Magic link error:", error);
       track("magic_link_failed", {
         reason: error instanceof TypeError ? "network" : "server",
       });
       toast({
         title: "Något gick fel",
-        description: error.message || "Kunde inte skicka inloggningslänk",
+        description: (error instanceof Error && error.message) || "Kunde inte skicka inloggningslänk",
         variant: "destructive",
       });
     }
